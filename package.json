@@ -7,12 +7,14 @@
     "startAI": "node ./testAI",
     "startLibrary": "node ./testLibrary",
     "startData": "node ./data",
-    "start": "node ./main",
+    "start": "node ./testElasticsearch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "brain.js": "^1.6.1",
     "child_process": "^1.0.2",
-    "fuse.js": "^6.6.2"
+    "elasticsearch": "^16.7.3",
+    "fuse.js": "^6.6.2",
+    "get-json": "^1.0.1"
   }
 }

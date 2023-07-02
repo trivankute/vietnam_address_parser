@@ -53,8 +53,7 @@ const addressParser = (address) => {
   };
 
   // expandAddress("truong thcs tung thien vuong, hem 369 tung thien vuong, p12 q8 thanh pho ho chi minh");
-addressParser("51 lý thượng kiệt, phường 12, quận 8, thành phố hồ chí minh");
-  
+// addressParser("phường 12, quận 8");
   
   
   
