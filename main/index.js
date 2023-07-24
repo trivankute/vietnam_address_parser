@@ -1,16 +1,24 @@
-const importUrl = "../data/processed/"
+// const importUrl = "../data/processed/"
+const importUrl = "../data/processedButVars/"
 
-// const provinces = require(`${importUrl}province.json`)
-const cities = require(`${importUrl}city.json`)
-const districts = require(`${importUrl}district.json`)
-const wards = require(`${importUrl}ward.json`)
-const streets = require(`${importUrl}street.json`)
-const names = require(`${importUrl}name.json`)
-const housenumbers = require(`${importUrl}housenumber.json`)
+// // const provinces = require(`${importUrl}province.json`)
+// const cities = require(`${importUrl}city.json`)
+// const districts = require(`${importUrl}district.json`)
+// const wards = require(`${importUrl}ward.json`)
+// const streets = require(`${importUrl}street.json`)
+// const names = require(`${importUrl}name.json`)
+// const housenumbers = require(`${importUrl}housenumber.json`)
+
+
+const cities = require(`${importUrl}city.js`)
+const districts = require(`${importUrl}district.js`)
+const wards = require(`${importUrl}ward.js`)
+const streets = require(`${importUrl}street.js`)
+const names = require(`${importUrl}name.js`)
+const housenumbers = require(`${importUrl}housenumber.js`)
 
 const Fuse = require('fuse.js')
 var levenshtein = require('fast-levenshtein');
-const { string } = require('i/lib/util')
 
 // const fuseForProvinces = new Fuse(provinces, {
 //     includeScore: true,
@@ -309,313 +317,6 @@ async function addressParser(fullAddress) {
     return result
 }
 
-
-async function addressHintHelper(fullAddress) {
-    let result = {
-        housenumber: false,
-        housename: false,
-        street: false,
-        ward: false,
-        district: false,
-        city: false
-    }
-    if (fullAddress === '') return {
-        housenumber: "",
-        housename: "",
-        street: "",
-        ward: "",
-        district: "",
-        city: ""
-    }
-    // delete all ','; '.';
-    fullAddress = fullAddress.replace(/,/g, '')
-    // split fullAddress into array of tokens
-    let addressTokens = fullAddress.split(' ')
-    let curString = ""
-    let indexStart = 0
-    let curType = false
-    let onlyBackwardOneTime = false
-    /////////////////////////////////////// old version nothing here
-    let typeChange = false
-    let rightString = ''
-    for (let i = 0; i < addressTokens.length; i++) {
-        curString = addressTokens.slice(indexStart, i + 1).join(' ')
-        // console.log(curString)
-        let res = await useFuses(curString, result)
-        let curScore = 1
-        // count number != [] or score not big in res
-        let countCompatible = 0
-        for (let j = 0; j < res.length; j++) {
-            if (res[j].data.length > 0 && res[j].data[0].score < 0.2) {
-                countCompatible++
-            }
-        }
-        // console.log(countCompatible)
-        if (countCompatible > 0) {
-            //////////////////////////////////////// old version nothing here
-            // find the smallest score in res
-            let tempType = curType
-            let tempScore = curScore
-            let tempString = rightString
-            for (let j = 0; j < res.length; j++) {
-                //////////////////////////////////////////////// old version
-                // if (res[j].data.length > 0 && res[j].data[0].score < curScore) {
-                if (res[j].data.length > 0 && res[j].data[0].score < tempScore) {
-                    tempType = res[j].type
-                    tempScore = res[j].data[0].score
-                    tempString = res[j].data[0].item
-
-                    ///////////////////////////////////// old version
-                    // curType = res[j].type
-                    // curScore = res[j].data[0].score
-                    // rightString = res[j].data[0].item
-                }
-            }
-            if (curType !== false && tempType !== curType) {
-                typeChange = true
-            }
-            else {
-                curType = tempType
-                curScore = tempScore
-                rightString = tempString
-            }
-            // console.log(curString, tempType, tempScore, tempString)
-        }
-        //////////////////////////////////////old version
-        // else 
-        if (countCompatible === 0 || typeChange === true) {
-
-            // for autocomplete
-            if (curType !== false) {
-                // cut the last word of curString if(want to use curString)
-                curString = addressTokens.slice(indexStart, i).join(' ')
-                result[curType] = curString
-                // result[curType] = rightString
-            }
-            ////////////////////////////////////////// test for rules check
-            if (curType === 'street') {
-                if (result['housename'] === false)
-                    result['housename'] = true
-                if (result['housenumber'] === false)
-                    result['housenumber'] = true
-            }
-            if (curType === 'ward') {
-                if (result['housename'] === false)
-                    result['housename'] = true
-                if (result['housenumber'] === false)
-                    result['housenumber'] = true
-                if (result['street'] === false)
-                    result['street'] = true
-            }
-            if (curType === 'district') {
-                if (result['housename'] === false)
-                    result['housename'] = true
-                if (result['housenumber'] === false)
-                    result['housenumber'] = true
-                if (result['street'] === false)
-                    result['street'] = true
-                if (result['ward'] === false)
-                    result['ward'] = true
-            }
-            if (curType === 'city') {
-                if (result['housename'] === false)
-                    result['housename'] = true
-                if (result['housenumber'] === false)
-                    result['housenumber'] = true
-                if (result['street'] === false)
-                    result['street'] = true
-                if (result['ward'] === false)
-                    result['ward'] = true
-                if (result['district'] === false)
-                    result['district'] = true
-            }
-            // /////////////////////////////////////////////// test for every where search
-            // if (curType === 'housenumber') {
-            //     if (result['housename'] === false)
-            //         result['housename'] = true
-            // }
-            // if (curType === 'housename') {
-            //     if (result['housenumber'] === false)
-            //         result['housenumber'] = true
-            // }
-            // if (curType === 'street') {
-            //     if (result['street'] === false)
-            //         result['street'] = true
-            // }
-            // if (curType === 'ward') {
-            //     if (result['ward'] === false)
-            //         result['ward'] = true
-            // }
-            // if (curType === 'district') {
-            //     if (result['district'] === false)
-            //         result['district'] = true
-            // }
-
-
-
-            indexStart = i
-            if (countCompatible === 0 && onlyBackwardOneTime === false) {
-                i--
-                onlyBackwardOneTime = true
-            }
-            else if (countCompatible === 0 && onlyBackwardOneTime === true) {
-                onlyBackwardOneTime = false
-            }
-            curType = false
-            // /////////////////////////////// old version nothing
-            typeChange = false
-            rightString = ''
-            continue
-        }
-
-    }
-
-    if (curType !== false) {
-        // no need to cut the last word of curString if want to use curString just change it to curString
-        result[curType] = curString
-        ////////////////////////////////////////// test for rules check
-        if (curType === 'street') {
-            if (result['housename'] === false)
-                result['housename'] = true
-            if (result['housenumber'] === false)
-                result['housenumber'] = true
-        }
-        if (curType === 'ward') {
-            if (result['housename'] === false)
-                result['housename'] = true
-            if (result['housenumber'] === false)
-                result['housenumber'] = true
-            if (result['street'] === false)
-                result['street'] = true
-        }
-        if (curType === 'district') {
-            if (result['housename'] === false)
-                result['housename'] = true
-            if (result['housenumber'] === false)
-                result['housenumber'] = true
-            if (result['street'] === false)
-                result['street'] = true
-            if (result['ward'] === false)
-                result['ward'] = true
-        }
-        if (curType === 'city') {
-            if (result['housename'] === false)
-                result['housename'] = true
-            if (result['housenumber'] === false)
-                result['housenumber'] = true
-            if (result['street'] === false)
-                result['street'] = true
-            if (result['ward'] === false)
-                result['ward'] = true
-            if (result['district'] === false)
-                result['district'] = true
-        }
-    }
-    // console.log(curType, rightString)
-    return result
-}
-
-async function addressHint(fullAddress) {
-    if (fullAddress === '') return ""
-    let {
-        housenumber,
-        housename,
-        street,
-        ward,
-        district,
-        city
-    } = await addressHintHelper(fullAddress)
-    let signal = {
-        housenumber,
-        housename,
-        street,
-        ward,
-        district,
-        city
-    }
-    // find the last signal is string
-    // check if there is any false
-    let lastSignal = ''
-    for (let key in signal) {
-        if (signal[key] !== false) {
-            lastSignal = key
-        }
-    }
-    console.log(lastSignal)
-    if (lastSignal === 'housename') {
-        // find all name match with housename
-        let res = fuseForNames.search(housename, { limit: 5 })
-        let result = []
-        for (let i = 0; i < res.length; i++) {
-            // only <0.2
-            if (res[i].score < 0.2) {
-                result.push(res[i].item)
-            }
-        }
-        return result
-    }
-    else if (lastSignal === 'housenumber') {
-        // find all housenumber match with housenumber
-        let res = fuseForHousenumbers.search(housenumber, { limit: 5 })
-        let result = []
-        for (let i = 0; i < res.length; i++) {
-            // only <0.2
-            if (res[i].score < 0.2) {
-                result.push(res[i].item)
-            }
-        }
-        return result
-    }
-    else if (lastSignal === 'street') {
-        // find all street match with street
-        let res = fuseForStreets.search(street, { limit: 5 })
-        let result = []
-        for (let i = 0; i < res.length; i++) {
-            // only <0.2
-            if (res[i].score < 0.2) {
-                result.push(res[i].item)
-            }
-        }
-        return result
-    }
-    else if (lastSignal === 'ward') {
-        // find all ward match with ward
-        let res = fuseForWards.search(ward, { limit: 5 })
-        let result = []
-        for (let i = 0; i < res.length; i++) {
-            // only <0.2
-            if (res[i].score < 0.2) {
-                result.push(res[i].item)
-            }
-        }
-        return result
-    }
-    else if (lastSignal === 'district') {
-        // find all district match with district
-        let res = fuseForDistricts.search(district, { limit: 5 })
-        let result = []
-        for (let i = 0; i < res.length; i++) {
-            // only <0.2
-            if (res[i].score < 0.2) {
-                result.push(res[i].item)
-            }
-        }
-        return result
-    }
-    else if (lastSignal === 'city') {
-        // find all city match with city
-        let res = fuseForCities.search(city, { limit: 5 })
-        let result = []
-        for (let i = 0; i < res.length; i++) {
-            // only <0.2
-            if (res[i].score < 0.2) {
-                result.push(res[i].item)
-            }
-        }
-        return result
-    }
-}
-
 // addressParser("Đường Phùng Hưg, Phườg 13 Quan 5").then(res => console.log(res))
 // addressParser("90, Đường gò Công, Phường 13, Q5").then(res => console.log(res))
 // addressParser("551, Đường bình đông, Phường 13, Quan 8").then(res => console.log(res))
@@ -746,7 +447,7 @@ function findFirstKind(stringArrays, type) {
         }
     }
     // filter over forResult to find all items near the smallest distance
-    forResult = forResult.filter(item => item.distance < minDistance+2)
+    forResult = forResult.filter(item => item.distance < minDistance + 2)
 
     // loop over forResult to find the longest itemsLength
     // console.log(forResult)
@@ -978,7 +679,7 @@ async function addressParserV2(fullAddress) {
     // console.log("done")
     return result
 }
-module.exports = addressParserV2
+// module.exports = addressParserV2
 // addressParserV2("Đường Phùng Hưg, Phườg 13 Quận 5").then(res => console.log(res))
 // addressParserV2("90, Đường gò Công, Phường 13, Quận 5").then(res => console.log(res))
 // addressParserV2("551, Đường bình đông, Phường 13, Quan 8").then(res => console.log(res))
@@ -994,78 +695,208 @@ module.exports = addressParserV2
 // addressParserV2("com chay hoa hao, 92, bàn cờ, Phuong 3, Quan 3").then(res => console.log(res))
 // addressParserV2("Phường Nguyễn Cư Trinh, Quận 1,").then(res => console.log(res))
 // addressParserV2("Quận 5,").then(res => console.log(res))
-// addressParserV2("Đại Học Khoa học Tự Nhiên, 227, Nguyễn Văn Cừ, Phường 4, Quận 5, Thành Phố Hồ Chí Minh").then(res => console.log(res))
+// addressParserV2("Đại Học Khoa học Tự Nhiên, 227, Nguyễn Văn Cừ, Phường 4, Quận 5, Thành Phố Hồ Chí Minh").then(res => {
+//     console.log("V2:", res)
+// })
 // addressParserV2("Đường tỉnh 763, Xã Phú Túc, Huyện Định Quán, Tỉnh Đồng Nai, Việt Nam ").then(res => console.log(res))
 // addressParserV2("Bác Hồ - Bác Tôn, Đường Lê Duẩn, Phường Lê Đại Hành, Quận Hai Bà Trưng, Thành phố Hà Nội tỉnh thanh hóa").then(res => console.log(res))
 // addressParserV2("268 Lý thường kiệt phường 1 quận 1 thành phố hồ chí minh").then(res => console.log(res))
 // addressParserV2("thành phố hồ chí minh").then(res => console.log(res))
+
+////////////////////////////////////////////////////////////////////////
+const { StaticPool } = require('node-worker-threads-pool');
+async function addressParserV3WithThreads(fullAddress) {
+    const pool = new StaticPool({
+        size: 3,
+        task: './main/worker.js'
+    });
+    let result = {
+        housenumber: false,
+        housename: false,
+        street: false,
+        ward: false,
+        district: false,
+        city: false,
+        // province: false
+    }
+    if (fullAddress === '') return {
+        housenumber: "",
+        housename: "",
+        street: "",
+        ward: "",
+        district: "",
+        city: "",
+        // province: ""
+    }
+    // delete all ','; '.';
+    fullAddress = fullAddress.replace(/,/g, '')
+    let stop = false
+    while (!stop) {
+        // split fullAddress into array of tokens
+        let testTokens = fullAddress.split(' ')
+        let stringArrays = []
+        for (let i = 1; i <= testTokens.length; i++) {
+            stringArrays.push(testTokens.slice(0, i).join(' '))
+        }
+        let order = ['city', 'district', 'ward', 'street', 'housenumber', 'housename'];
+        let promises = [];
+        for (let i = 0; i < order.length; i++) {
+            if (result.housename === false && order[i] === 'housename') {
+                promises.push(pool.exec({ stringArrays, type: order[i] }));
+            }
+            if (result.housenumber === false && order[i] === 'housenumber') {
+                promises.push(pool.exec({ stringArrays, type: order[i] }));
+            }
+            if (result.street === false && order[i] === 'street') {
+                promises.push(pool.exec({ stringArrays, type: order[i] }));
+            }
+            if (result.ward === false && order[i] === 'ward') {
+                promises.push(pool.exec({ stringArrays, type: order[i] }));
+            }
+            if (result.district === false && order[i] === 'district') {
+                promises.push(pool.exec({ stringArrays, type: order[i] }));
+            }
+            if (result.city === false && order[i] === 'city') {
+                promises.push(pool.exec({ stringArrays, type: order[i] }));
+            }
+        }
+        let probsArray = await Promise.all(promises)
+
+        // filter lowest distance
+        let minDistance = 999
+        for (let i = 0; i < probsArray.length; i++) {
+            if (probsArray[i].distance < minDistance) {
+                minDistance = probsArray[i].distance
+            }
+        }
+        probsArray = probsArray.filter(item => item.distance < minDistance + 2)
+
+        // filter longest itemsLength
+        let maxLength = 0
+        for (let i = 0; i < probsArray.length; i++) {
+            if (probsArray[i].itemsLength > maxLength) {
+                maxLength = probsArray[i].itemsLength
+            }
+        }
+        probsArray = probsArray.filter(item => item.itemsLength === maxLength)
+
+        // filter smallest score
+        let min = 999
+        for (let i = 0; i < probsArray.length; i++) {
+            if (probsArray[i].score < min) {
+                min = probsArray[i].score
+                minIndex = i
+            }
+        }
+
+        if (probsArray.length > 0) {
+            let tempType = probsArray[minIndex].type
+            let tempRightString = probsArray[minIndex].rightString
+            let tempString = probsArray[minIndex].curString
+            result[tempType] = tempRightString
+            fullAddress = fullAddress.replace(tempString, '')
+            fullAddress = fullAddress.trim()
+            if (tempType === 'street') {
+                if (result['housename'] === false)
+                    result['housename'] = true
+                else if (result['housenumber'] === false)
+                    result['housenumber'] = true
+            }
+            else if (tempType === 'ward') {
+                if (result['housename'] === false)
+                    result['housename'] = true
+                else if (result['housenumber'] === false)
+                    result['housenumber'] = true
+                else if (result['street'] === false)
+                    result['street'] = true
+            }
+            else if (tempType === 'district') {
+                if (result['housename'] === false)
+                    result['housename'] = true
+                else if (result['housenumber'] === false)
+                    result['housenumber'] = true
+                else if (result['street'] === false)
+                    result['street'] = true
+                else if (result['ward'] === false)
+                    result['ward'] = true
+            }
+            else if (tempType === 'city') {
+                if (result['housename'] === false)
+                    result['housename'] = true
+                else if (result['housenumber'] === false)
+                    result['housenumber'] = true
+                else if (result['street'] === false)
+                    result['street'] = true
+                else if (result['ward'] === false)
+                    result['ward'] = true
+                else if (result['district'] === false)
+                    result['district'] = true
+            }
+            // if (tempType === 'province') {
+            //     if (result['housename'] === false)
+            //         result['housename'] = true
+            //     if (result['housenumber'] === false)
+            //         result['housenumber'] = true
+            //     if (result['street'] === false)
+            //         result['street'] = true
+            //     if (result['ward'] === false)
+            //         result['ward'] = true
+            //     if (result['district'] === false)
+            //         result['district'] = true
+            //     if (result['city'] === false)
+            //         result['city'] = true
+            // }
+        }
+        else {
+            stop = true
+        }
+        // console.log("loop")
+    }
+    // console.log("done")
+    await pool.destroy()
+    return result
+}
+// addressParserV3WithThreads("Đại Học Khoa học Tự Nhiên, 227, Nguyễn Văn Cừ, Phường 4, Quận 5, Thành Phố Hồ Chí Minh").then(res => {
+//     console.log("V3:", res)
+// })
 //////////////////////////////////////////////////////////////////////////////
-// function findFirstHint(fullAddress, type) {
-//     fullAddress = fullAddress.replace(/,/g, '')
-//     let testTokens = fullAddress.split(' ')
-//     let stringArrays = []
-//     for(let i=testTokens.length-1; i>=0; i--)
-//     {
-//         stringArrays.push(testTokens.slice(i, testTokens.length).join(' '))
-//     }
-//     let stop = false;
-//     let result = []
-//     for(let i=0; i<stringArrays.length; i++)
-//     {
-//         let res = fuseForNames.search(stringArrays[i], { limit: 1 })
-//         result.push({...res[0], 
-//         curString: stringArrays[i],
-//         rightString: res[0].item,
-//         distance: levenshtein.get(res[0].item, stringArrays[i], { useCollator: true }),
-//         itemsLength: i+1})
-//     }
-//     console.log(result)
-// }
-// findFirstHint("Đại học bách khoa, thành phố hồ chí minh")
 // test for address hint
 async function addressHint(fullAddress) {
+    const pool = new StaticPool({
+        size: 3,
+        task: './main/worker.js'
+    });
     // delete all ',';
     fullAddress = fullAddress.replace(/,/g, '')
     let testTokens = fullAddress.split(' ')
     let stringArrays = []
-    for(let i=testTokens.length-1; i>=0; i--)
-    {
+    for (let i = testTokens.length - 1; i >= 0; i--) {
         stringArrays.push(testTokens.slice(i, testTokens.length).join(' '))
     }
 
-    let result = []
-    // start finding the lastest kind by passing reversed stringArrs
-    let housenameRes = findFirstKind(stringArrays, 'housename')
-    if(housenameRes.length>0)
-    {
-        result.push({...housenameRes[0], type:"housename"})
+    let order = ['city', 'district', 'ward', 'street', 'housenumber', 'housename'];
+    let promises = [];
+    for (let i = 0; i < order.length; i++) {
+        if (order[i] === 'housename') {
+            promises.push(pool.exec({ stringArrays, type: order[i] }));
+        }
+        if (order[i] === 'housenumber') {
+            promises.push(pool.exec({ stringArrays, type: order[i] }));
+        }
+        if (order[i] === 'street') {
+            promises.push(pool.exec({ stringArrays, type: order[i] }));
+        }
+        if (order[i] === 'ward') {
+            promises.push(pool.exec({ stringArrays, type: order[i] }));
+        }
+        if (order[i] === 'district') {
+            promises.push(pool.exec({ stringArrays, type: order[i] }));
+        }
+        if (order[i] === 'city') {
+            promises.push(pool.exec({ stringArrays, type: order[i] }));
+        }
     }
-    let housenumberRes = findFirstKind(stringArrays, 'housenumber')
-    if(housenumberRes.length>0)
-    {
-        result.push({...housenumberRes[0], type:"housenumber"})
-    }
-    let streetRes = findFirstKind(stringArrays, 'street')
-    if(streetRes.length>0)
-    {
-        result.push({...streetRes[0], type:"street"})
-    }
-    let wardRes = findFirstKind(stringArrays, 'ward')
-    if(wardRes.length>0)
-    {
-        result.push({...wardRes[0], type:"ward"})
-    }
-    let districtRes = findFirstKind(stringArrays, 'district')
-    if(districtRes.length>0)
-    {
-        result.push({...districtRes[0], type:"district"})
-    }
-    let cityRes = findFirstKind(stringArrays, 'city')
-    if(cityRes.length>0)
-    {
-        result.push({...cityRes[0], type:"city"})
-    }
-    // console.log(result)
+    let result = await Promise.all(promises)
     // find the smallest distance
     let minDistance = 999
     for (let i = 0; i < result.length; i++) {
@@ -1074,7 +905,7 @@ async function addressHint(fullAddress) {
         }
     }
     // filter over result to find all items near the smallest distance
-    result = result.filter(item => item.distance < minDistance+2)
+    result = result.filter(item => item.distance < minDistance + 2)
 
     // find the longest itemsLength
     let maxLength = 0
@@ -1104,36 +935,29 @@ async function addressHint(fullAddress) {
         result = [result[result.length - 1]]
     }
 
-    if(result.length===0)
-    {
+    if (result.length === 0) {
         console.log("not found")
         return
     }
 
     let hintsList = []
-    if(result[0].type==='city')
-    {
-        hintsList = fuseForCities.search(result[0].curString, {limit:10})
+    if (result[0].type === 'city') {
+        hintsList = fuseForCities.search(result[0].curString, { limit: 10 })
     }
-    else if(result[0].type==='district')
-    {
-        hintsList = fuseForDistricts.search(result[0].curString, {limit:10})
+    else if (result[0].type === 'district') {
+        hintsList = fuseForDistricts.search(result[0].curString, { limit: 10 })
     }
-    else if(result[0].type==='ward')
-    {
-        hintsList = fuseForWards.search(result[0].curString, {limit:10})
+    else if (result[0].type === 'ward') {
+        hintsList = fuseForWards.search(result[0].curString, { limit: 10 })
     }
-    else if(result[0].type==='street')
-    {
-        hintsList = fuseForStreets.search(result[0].curString, {limit:10})
+    else if (result[0].type === 'street') {
+        hintsList = fuseForStreets.search(result[0].curString, { limit: 10 })
     }
-    else if(result[0].type==='housenumber')
-    {
-        hintsList = fuseForHousenumbers.search(result[0].curString, {limit:10})
+    else if (result[0].type === 'housenumber') {
+        hintsList = fuseForHousenumbers.search(result[0].curString, { limit: 10 })
     }
-    else if(result[0].type==='housename')
-    {
-        hintsList = fuseForNames.search(result[0].curString, {limit:10})
+    else if (result[0].type === 'housename') {
+        hintsList = fuseForNames.search(result[0].curString, { limit: 10 })
     }
 
     // filter first 10 items with the smallest score < 0.5
@@ -1145,17 +969,23 @@ async function addressHint(fullAddress) {
         return tempFullAddress
     })
 
+    await pool.destroy()
     return addressHints
 }
-let test = '103/4 cao xuân dục phường 12 quận 8 thành phố hồ chí minh'
-// let test = 'thanh pho ho chi minh'
+// let test = '103/4 cao xuân dục phường 12 quận 8 thành phố hồ chí minh'
+// let test = 'Đại Học Khoa học Tự'
 // console.log(fuseForNames.search(test, { limit: 1 }))
 // console.log(fuseForHousenumbers.search(test, { limit: 1 }))
 // console.log(fuseForStreets.search(test, { limit: 1 }))
 // console.log(fuseForWards.search(test, { limit: 1 }))
 // console.log(fuseForDistricts.search(test, { limit: 1 }))
 // console.log(fuseForCities.search(test, { limit: 1 }))
-addressHint(test).then(res => console.log(res))
+// addressHint(test).then(res => console.log(res))
+module.exports = {
+    addressParserV2,
+    addressParserV3WithThreads,
+    addressHint
+}
 //////////////////////////////////////////////////////////////////////////////
 // function testForFunForCity(test) {
 //     // delete all ','; '.';
@@ -1324,5 +1154,3 @@ addressHint(test).then(res => console.log(res))
 //     console.log('saved');
 // }
 // );
-
-
